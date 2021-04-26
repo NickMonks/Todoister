@@ -4,9 +4,8 @@ import android.os.Bundle;
 
 import com.google.android.material.bottomsheet.BottomSheetBehavior;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
-import com.google.android.material.snackbar.Snackbar;
+import com.nickmonks.adapter.OnTodoClickListener;
 import com.nickmonks.adapter.RecyclerViewAdapter;
-import com.nickmonks.model.Priority;
 import com.nickmonks.model.Task;
 import com.nickmonks.model.TaskViewModel;
 
@@ -19,21 +18,19 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import android.util.Log;
-import android.view.View;
-
 import android.view.Menu;
 import android.view.MenuItem;
 
-import java.util.Calendar;
 import java.util.List;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements OnTodoClickListener {
 
     public static final String TAG = "Database";
     private TaskViewModel taskViewModel;
     private RecyclerView recyclerView;
     private RecyclerViewAdapter recyclerViewAdapter;
     private BottomSheetFragment bottomSheetFragment;
+    private SharedViewModel sharedViewModel;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -56,10 +53,14 @@ public class MainActivity extends AppCompatActivity {
         recyclerView.setLayoutManager(new LinearLayoutManager(this)); // layout manager will define the disposition of the viewHolder
 
 
-        // create viewmodel
+        // create viewmodel for Task
         taskViewModel = new ViewModelProvider.AndroidViewModelFactory(
                 MainActivity.this.getApplication())
                 .create(TaskViewModel.class);
+
+        // create ShareViewModel:
+        sharedViewModel = new ViewModelProvider(this)
+                .get(SharedViewModel.class);
 
         // thanks to livedata, if there is any change we will see it automatically on the screen
         // WITHOUT REFRESHING THE SCREEN.
@@ -67,7 +68,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onChanged(List<Task> tasks) {
                 // since we get all our task here, we can define our recyclerview adapter here:
-                recyclerViewAdapter = new RecyclerViewAdapter(tasks);
+                recyclerViewAdapter = new RecyclerViewAdapter(tasks, MainActivity.this);
                 recyclerView.setAdapter(recyclerViewAdapter);
             }
         });
@@ -103,5 +104,38 @@ public class MainActivity extends AppCompatActivity {
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    public void onTodoClick(int adapterPosition, Task task) {
+
+        /*Edit the Task inside the bottom fragment; to do so, MainActivity passes the data
+        to the corresponding fragment. The recommended way to do this is by using the ViewModel
+
+        ViewModel will act as a middleware between Fragment - Activity, in a lifecycle conscious-way
+        i.e., implements the observer pattern */
+
+        // Set the mutable live data...
+        Log.d("Click", "onTodoClick: share view model");
+        sharedViewModel.setSelectedItem(task);
+        sharedViewModel.setIsEdit(true);
+
+        // SHOW the bottom sheet dialog
+        showBottomSheetDialog();
+
+        // ... pass it to the bottom fragment:
+
+
+    }
+
+    @Override
+    public void onTodoRadioButtonClick(Task task) {
+        Log.d("Click", "onTodoClick: " + task.getTask());
+        TaskViewModel.delete(task);
+
+        // Once deleted, we notify the entire recycler view that something as changed
+        // So render again the View
+        recyclerViewAdapter.notifyDataSetChanged();
+
     }
 }
