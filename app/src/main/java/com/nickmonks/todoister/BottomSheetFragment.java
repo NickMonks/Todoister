@@ -47,6 +47,7 @@ public class BottomSheetFragment extends BottomSheetDialogFragment implements Vi
     private Group calendarGroup;
     private SharedViewModel sharedViewModel;
     private boolean isEdit;
+    private Priority priority;
 
     private Date dueDate;
     Calendar calendar = Calendar.getInstance();
@@ -116,12 +117,44 @@ public class BottomSheetFragment extends BottomSheetDialogFragment implements Vi
             }
         });
 
+        priorityButton.setOnClickListener(view1 -> {
+            Utils.hideSoftKeyboard(view1);
+
+            int priorityVisibility = (priorityRadioGroup.getVisibility() == View.GONE) ? View.VISIBLE : View.GONE;
+            priorityRadioGroup.setVisibility(priorityVisibility);
+
+            // Once is visible, we need to add this listener to check which button was selected
+            priorityRadioGroup.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener() {
+                @Override
+                public void onCheckedChanged(RadioGroup group, int checkedId) {
+                    if (priorityRadioGroup.getVisibility() == View.VISIBLE){
+                        // If visibility is true, then we will take the id of the button
+                        selectedButtonId = checkedId;
+                        selectedRadioButton = view.findViewById(selectedButtonId);
+                        if (selectedRadioButton.getId() == R.id.radioButton_high){
+                            priority = Priority.HIGH;
+                        } else if(selectedRadioButton.getId() == R.id.radioButton_med){
+                            priority = Priority.MEDIUM;
+                        }else if (selectedRadioButton.getId() == R.id.radioButton_low) {
+                            priority = Priority.LOW;
+                        } else {
+                            // in case no button is selected, we will make it low
+                            priority = Priority.LOW;
+                        }
+                    } else {
+                        // in case priority is not visible, we will set it to low
+                        priority = Priority.LOW;
+                    }
+                }
+            });
+        });
+
         saveButton.setOnClickListener(v -> {
             String task = enterTodo.getText().toString().trim();
             Log.d("TAG", "onViewCreated: "+task);
-            if (!TextUtils.isEmpty(task) && dueDate != null){
+            if (!TextUtils.isEmpty(task) && dueDate != null && priority != null){
                 Log.d("TAG", "onViewCreated: is not empty");
-                Task myTask = new Task(task, Priority.HIGH,
+                Task myTask = new Task(task, priority,
                         dueDate,Calendar.getInstance().getTime(),
                         false);
 
@@ -131,7 +164,7 @@ public class BottomSheetFragment extends BottomSheetDialogFragment implements Vi
                     Task updateTask = sharedViewModel.getSelectedItem().getValue();
                     updateTask.setTask(task);
                     updateTask.setDateCreated(Calendar.getInstance().getTime());
-                    updateTask.setPriority(Priority.HIGH);
+                    updateTask.setPriority(priority);
                     updateTask.setDueDate(dueDate);
 
                     TaskViewModel.update(updateTask);
@@ -178,6 +211,7 @@ public class BottomSheetFragment extends BottomSheetDialogFragment implements Vi
     @Override
     public void onClick(View v) {
         // onClick method for the Chip vew
+        Log.d("Calendar - CHip", "onClick: ");
         int id = calendarView.getId();
         switch (id){
             case R.id.today_chip:
