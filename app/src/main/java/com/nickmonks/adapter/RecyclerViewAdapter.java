@@ -1,5 +1,7 @@
 package com.nickmonks.adapter;
 
+import android.content.res.ColorStateList;
+import android.graphics.Color;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -45,10 +47,37 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
         Task task = taskList.get(position);
         String formatted = Utils.formatDate(task.getDueDate());
 
+        // In order to define the color of the Chip in the Recycler View (To define the priority
+        // visually ) we need to change the STATE of the color of that widget. To do so, we need to
+        // define a colorstatelist object.
+
+        // in fact, all object have this colorstatelist defined.
+
+        ColorStateList colorStateList = new ColorStateList(new int[][]{
+
+                // This is where we define the color state. For example when we press a button
+                // the color will slightly change. this attribute is defined in the android attribute
+                new int[]{-android.R.attr.state_enabled},
+                new int[] {android.R.attr.state_enabled}
+
+        }, new int[] {
+
+                Color.LTGRAY, // disabled state
+                Utils.priorityColor(task) // the actual color of the chip depending of the state
+        });
+
         // this is the actual data, and we bind it to the ViewHolder views!
         // We can set, inside our inflated row:
+
         holder.task.setText(task.getTask());
         holder.todayChip.setText(formatted);
+
+        // change color state of the chip
+        holder.todayChip.setTextColor(Utils.priorityColor(task));
+
+        // to change tint, we need to pass the colorstatelist
+        holder.todayChip.setChipIconTint(colorStateList);
+        holder.radioButton.setButtonTintList(colorStateList);
 
 
     }
